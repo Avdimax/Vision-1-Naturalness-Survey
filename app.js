@@ -1,10 +1,7 @@
-
 // ========================================
-// FIREBASE-INTEGRATED SURVEY APPLICATION
-// BULLETPROOF FINAL VERSION
+// FIREBASE SURVEY - COMPLETE WORKING VERSION
 // ========================================
 
-// Firebase Configuration
 const firebaseConfig = {
   apiKey: "AIzaSyAZV24F4Bnak-7bb4jtzDvuREql-GSJjRQ",
   authDomain: "survey-responses-65ef0.firebaseapp.com",
@@ -16,7 +13,6 @@ const firebaseConfig = {
   measurementId: "G-95LPH6SWL8"
 };
 
-// Survey Data Storage
 const surveyData = {
   demographics: {},
   dialogues: [{}, {}, {}, {}, {}]
@@ -24,92 +20,38 @@ const surveyData = {
 
 let currentDialogue = 0;
 
-// ========================================
-// INITIALIZE FIREBASE
-// ========================================
-
 document.addEventListener('DOMContentLoaded', function() {
-  console.log('🔍 DOMContentLoaded fired');
-  
-  setTimeout(function() {
-    if (typeof firebase !== 'undefined') {
-      console.log('✅ Firebase SDK found!');
-      try {
-        firebase.initializeApp(firebaseConfig);
-        console.log('✅ Firebase initialized!');
-      } catch (error) {
-        console.error('Firebase init error:', error.message);
-      }
-    } else {
-      console.error('❌ Firebase SDK NOT loaded!');
+  if (typeof firebase !== 'undefined') {
+    try {
+      firebase.initializeApp(firebaseConfig);
+      console.log('✅ Firebase initialized');
+    } catch (e) {
+      console.log('Firebase already initialized');
     }
-  }, 500);
+  }
 });
 
 // ========================================
-// CORE FUNCTIONS
+// NAVIGATION
 // ========================================
 
 function startSurvey() {
-  console.log('startSurvey() called');
   hideAllSections();
   showSection('demographicsSection');
-  showProgressBar();
-  updateProgress(0, 'Demographics');
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function hideAllSections() {
   const sections = document.querySelectorAll('.section');
-  sections.forEach(section => {
-    section.classList.remove('active');
-  });
+  sections.forEach(s => s.classList.remove('active'));
 }
 
-function showSection(sectionId) {
-  console.log('showSection:', sectionId);
-  const section = document.getElementById(sectionId);
+function showSection(id) {
+  const section = document.getElementById(id);
   if (section) {
     section.classList.add('active');
-    setTimeout(() => {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }, 50);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
-}
-
-function showProgressBar() {
-  const progressContainer = document.getElementById('progressContainer');
-  if (progressContainer) {
-    progressContainer.style.display = 'block';
-  }
-}
-
-function updateProgress(step, label) {
-  const percentage = (step / 6) * 100;
-  const progressFill = document.getElementById('progressFill');
-  const progressText = document.getElementById('progressText');
-  
-  if (progressFill) {
-    progressFill.style.width = percentage + '%';
-  }
-  if (progressText) {
-    progressText.textContent = label;
-  }
-}
-
-function validateForm(formId) {
-  const form = document.getElementById(formId);
-  if (!form) {
-    console.error('Form not found:', formId);
-    return false;
-  }
-  
-  if (!form.checkValidity()) {
-    form.reportValidity();
-    return false;
-  }
-  
-  return true;
 }
 
 // ========================================
@@ -117,8 +59,9 @@ function validateForm(formId) {
 // ========================================
 
 function submitDemographics() {
-  console.log('submitDemographics() called');
-  if (!validateForm('demographicsForm')) {
+  const form = document.getElementById('demographicsForm');
+  if (!form.checkValidity()) {
+    form.reportValidity();
     return;
   }
 
@@ -131,48 +74,42 @@ function submitDemographics() {
   };
 
   console.log('Demographics saved:', surveyData.demographics);
-  
+
   currentDialogue = 1;
   hideAllSections();
   showSection('dialogue1Section');
-  updateProgress(1, 'Dialogue 1 of 5');
 }
 
 // ========================================
 // DIALOGUE NAVIGATION
 // ========================================
 
-function nextDialogue(dialogueNum) {
-  console.log('nextDialogue:', dialogueNum);
-  const formId = `dialogue${dialogueNum}Form`;
-  
-  if (!validateForm(formId)) {
+function nextDialogue(num) {
+  const formId = `dialogue${num}Form`;
+  const form = document.getElementById(formId);
+  if (!form.checkValidity()) {
+    form.reportValidity();
     return;
   }
 
-  saveDialogueData(dialogueNum);
+  saveDialogueData(num);
 
-  if (dialogueNum < 5) {
-    currentDialogue = dialogueNum + 1;
+  if (num < 5) {
+    currentDialogue = num + 1;
     hideAllSections();
     showSection(`dialogue${currentDialogue}Section`);
-    updateProgress(currentDialogue, `Dialogue ${currentDialogue} of 5`);
   }
 }
 
-function previousDialogue(dialogueNum) {
-  console.log('previousDialogue:', dialogueNum);
-  saveDialogueData(dialogueNum);
-
-  if (dialogueNum === 1) {
+function previousDialogue(num) {
+  saveDialogueData(num);
+  if (num === 1) {
     hideAllSections();
     showSection('demographicsSection');
-    updateProgress(0, 'Demographics');
   } else {
-    currentDialogue = dialogueNum - 1;
+    currentDialogue = num - 1;
     hideAllSections();
     showSection(`dialogue${currentDialogue}Section`);
-    updateProgress(currentDialogue, `Dialogue ${currentDialogue} of 5`);
   }
 }
 
@@ -180,53 +117,39 @@ function previousDialogue(dialogueNum) {
 // SAVE DIALOGUE DATA
 // ========================================
 
-function saveDialogueData(dialogueNum) {
-  const formId = `dialogue${dialogueNum}Form`;
+function saveDialogueData(num) {
+  const formId = `dialogue${num}Form`;
   const form = document.getElementById(formId);
-  
-  if (!form) {
-    console.error('Form not found:', formId);
-    return;
-  }
+  if (!form) return;
 
-  const formData = new FormData(form);
-  
-  const dialogueTitles = [
-    'Museum of Nature and Wildlife',
-    'Observatory Discussion',
-    'Library Discussion',
-    'Travel Agent Consultation',
-    'Camera Loan Request'
-  ];
+  const fd = new FormData(form);
 
-  const dialogue = {
-    dialogueNumber: dialogueNum,
-    title: dialogueTitles[dialogueNum - 1],
+  surveyData.dialogues[num - 1] = {
+    dialogueNumber: num,
     sectionA: {
-      q1_naturalness: formData.get(`d${dialogueNum}_q1_naturalness`) || '',
-      q2_expectancy: formData.get(`d${dialogueNum}_q2_expectancy`) || ''
+      q1_naturalness: fd.get(`d${num}_q1_naturalness`) || '',
+      q2_expectancy: fd.get(`d${num}_q2_expectancy`) || ''
     },
     sectionB: {
-      q1_grammar: parseInt(formData.get(`d${dialogueNum}_q1_grammar`)) || null,
-      q2_vocabulary: parseInt(formData.get(`d${dialogueNum}_q2_vocabulary`)) || null,
-      q3_pacing: parseInt(formData.get(`d${dialogueNum}_q3_pacing`)) || null,
-      q4_cohesion: parseInt(formData.get(`d${dialogueNum}_q4_cohesion`)) || null,
-      q5_pragmatics: parseInt(formData.get(`d${dialogueNum}_q5_pragmatics`)) || null,
-      q6_tone: parseInt(formData.get(`d${dialogueNum}_q6_tone`)) || null,
-      q7_prosodic: parseInt(formData.get(`d${dialogueNum}_q7_prosodic`)) || null,
-      q8_cultural: parseInt(formData.get(`d${dialogueNum}_q8_cultural`)) || null,
-      q9_dynamics: parseInt(formData.get(`d${dialogueNum}_q9_dynamics`)) || null
+      q1_grammar: parseInt(fd.get(`d${num}_q1_grammar`)) || null,
+      q2_vocabulary: parseInt(fd.get(`d${num}_q2_vocabulary`)) || null,
+      q3_pacing: parseInt(fd.get(`d${num}_q3_pacing`)) || null,
+      q4_cohesion: parseInt(fd.get(`d${num}_q4_cohesion`)) || null,
+      q5_pragmatics: parseInt(fd.get(`d${num}_q5_pragmatics`)) || null,
+      q6_tone: parseInt(fd.get(`d${num}_q6_tone`)) || null,
+      q7_prosodic: parseInt(fd.get(`d${num}_q7_prosodic`)) || null,
+      q8_cultural: parseInt(fd.get(`d${num}_q8_cultural`)) || null,
+      q9_dynamics: parseInt(fd.get(`d${num}_q9_dynamics`)) || null
     },
     sectionC: {
-      q1_mostNatural: formData.get(`d${dialogueNum}_q1_mostNatural`) || '',
-      q2_leastNatural: formData.get(`d${dialogueNum}_q2_leastNatural`) || '',
-      q3_ifRealLife: formData.get(`d${dialogueNum}_q3_ifRealLife`) || '',
-      q4_suggestions: formData.get(`d${dialogueNum}_q4_suggestions`) || ''
+      q1_mostNatural: fd.get(`d${num}_q1_mostNatural`) || '',
+      q2_leastNatural: fd.get(`d${num}_q2_leastNatural`) || '',
+      q3_ifRealLife: fd.get(`d${num}_q3_ifRealLife`) || '',
+      q4_suggestions: fd.get(`d${num}_q4_suggestions`) || ''
     }
   };
 
-  surveyData.dialogues[dialogueNum - 1] = dialogue;
-  console.log('Dialogue', dialogueNum, 'saved');
+  console.log(`Dialogue ${num} saved`);
 }
 
 // ========================================
@@ -234,27 +157,24 @@ function saveDialogueData(dialogueNum) {
 // ========================================
 
 async function submitSurvey() {
-  console.log('submitSurvey() called');
-  
-  if (!validateForm('dialogue5Form')) {
+  const form = document.getElementById('dialogue5Form');
+  if (!form.checkValidity()) {
+    form.reportValidity();
     return;
   }
 
   saveDialogueData(5);
 
-  const submitBtn = event.target;
-  const originalText = submitBtn.textContent;
-  submitBtn.textContent = 'Submitting...';
-  submitBtn.disabled = true;
+  const btn = event.target;
+  const originalText = btn.textContent;
+  btn.textContent = 'Submitting...';
+  btn.disabled = true;
 
   try {
     const timestamp = new Date();
     const firstName = surveyData.demographics.firstName || 'Anonymous';
     const participantID = `${firstName}_${Date.now()}`;
-    
-    console.log('📝 Preparing submission...');
-    console.log('Participant ID:', participantID);
-    
+
     const finalData = {
       participantID: participantID,
       submissionTimestamp: timestamp.toISOString(),
@@ -268,27 +188,22 @@ async function submitSurvey() {
       }
     };
 
-    console.log('📤 Attempting to save to Firebase...');
+    console.log('📤 Submitting to Firebase...');
 
     if (typeof firebase !== 'undefined' && firebase.database) {
       try {
         const database = firebase.database();
         const dbPath = `responses/${participantID}`;
-        
-        console.log('🔄 Writing to Firebase path:', dbPath);
-        
         await database.ref(dbPath).set(finalData);
-        
-        console.log('✅ SUCCESS: Data saved to Firebase!');
+        console.log('✅ Data saved to Firebase!');
       } catch (firebaseError) {
-        console.error('❌ Firebase write error:', firebaseError);
+        console.error('Firebase error:', firebaseError);
       }
     } else {
-      console.warn('⚠️ Firebase not available');
+      console.warn('Firebase not available');
     }
 
     // Show confirmation
-    updateProgress(6, 'Complete');
     hideAllSections();
     showSection('confirmationSection');
 
@@ -303,18 +218,14 @@ async function submitSurvey() {
         </div>
       `;
     }
-    
+
   } catch (error) {
     console.error('❌ Submission error:', error);
     alert('Error: ' + error.message);
   } finally {
-    submitBtn.textContent = originalText;
-    submitBtn.disabled = false;
+    btn.textContent = originalText;
+    btn.disabled = false;
   }
 }
-
-// ========================================
-// LOGGING
-// ========================================
 
 console.log('✅ app.js loaded successfully');
