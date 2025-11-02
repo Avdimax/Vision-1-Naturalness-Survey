@@ -1,4 +1,4 @@
-app.js
+
 // ========================================
 // FIREBASE-INTEGRATED SURVEY APPLICATION
 // BULLETPROOF FINAL VERSION
