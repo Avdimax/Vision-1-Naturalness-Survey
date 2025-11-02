@@ -379,32 +379,16 @@ async function submitSurvey() {
 }
 
 
+
+// ========================================
 // LOCAL DOWNLOAD - DISABLED
-// (No longer needed - Firebase only)
 // ========================================
 
-// function downloadLocalBackup(data, filename) {
-//   try {
-//     const jsonString = JSON.stringify(data, null, 2);
-//     const blob = new Blob([jsonString], { type: 'application/json' });
-//     const url = URL.createObjectURL(blob);
-//     const link = document.createElement('a');
-//     link.href = url;
-//     link.download = filename;
-//     
-//     document.body.appendChild(link);
-//     link.click();
-//     document.body.removeChild(link);
-//     
-//     setTimeout(() => {
-//       URL.revokeObjectURL(url);
-//     }, 100);
-//     
-//     console.log('✅ Local file downloaded:', filename);
-//   } catch (error) {
-//     console.error('Error downloading file:', error);
-//   }
-// }
+function downloadLocalBackup(data, filename) {
+  // Firebase-only mode - no local download
+  console.log('📁 Data saved to Firebase only');
+}
+
 
 
 // ========================================
