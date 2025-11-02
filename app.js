@@ -347,11 +347,7 @@ async function submitSurvey() {
       console.warn('⚠️ Firebase not available, proceeding with local download only');
     }
 
-    // Always download locally as backup
-    console.log('💾 Downloading local backup...');
-    downloadLocalBackup(finalData, fileName);
-
-    // Show confirmation
+// Show confirmation
     updateProgress(6, 'Complete');
     hideAllSections();
     showSection('confirmationSection');
@@ -363,31 +359,10 @@ async function submitSurvey() {
           <p><strong style="color: green;">✅ Submission Complete!</strong></p>
           <p><strong>Participant ID:</strong><br/><code style="background: #fff; padding: 8px; display: inline-block; border-radius: 4px; font-family: monospace;">${participantID}</code></p>
           <p><strong>Submitted:</strong><br/>${timestamp.toLocaleString()}</p>
-          <p><strong>Status:</strong><br/>✅ Saved to database and downloaded locally</p>
+          <p><strong>Status:</strong><br/>✅ Saved to database</p>
         </div>
       `;
     }
-    
-  } catch (error) {
-    console.error('❌ Submission error:', error);
-    console.error('Full error:', error.toString());
-    alert('Error: ' + error.message);
-  } finally {
-    submitBtn.textContent = originalText;
-    submitBtn.disabled = false;
-  }
-}
-
-
-
-// ========================================
-// LOCAL DOWNLOAD - DISABLED
-// ========================================
-
-function downloadLocalBackup(data, filename) {
-  // Firebase-only mode - no local download
-  console.log('📁 Data saved to Firebase only');
-}
 
 
 
