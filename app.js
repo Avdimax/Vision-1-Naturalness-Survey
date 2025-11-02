@@ -36,47 +36,20 @@ document.addEventListener('DOMContentLoaded', function() {
 // ========================================
 // AUTO-SCROLL FUNCTIONALITY
 // ========================================
-function addScrollListenersToFormInputs() {
-  // Add listeners to all radio buttons and text inputs
-  const inputs = document.querySelectorAll('input[type="radio"], input[type="text"], textarea, select');
-  
+// ======================================
+// SMOOTH SCROLLING - AUTO SCROLL FEATURE
+// ======================================
+document.addEventListener('DOMContentLoaded', function() {
+  const inputs = document.querySelectorAll('input, textarea, select');
   inputs.forEach(input => {
-    // Remove existing listeners to prevent duplicates
-    input.removeEventListener('change', handleInputChange);
-    // Add new listener
-    input.addEventListener('change', handleInputChange);
-  });
-}
-
-function handleInputChange(event) {
-  const element = event.target;
-  
-  // Find the parent form-group or rating-group
-  let currentGroup = element.closest('.form-group') || element.closest('.rating-group');
-  
-  if (currentGroup) {
-    // Find the next form-group or rating-group
-    let nextGroup = currentGroup.nextElementSibling;
-    
-    // Skip through siblings that are not form-group or rating-group
-    while (nextGroup) {
-      if (nextGroup.classList.contains('form-group') || nextGroup.classList.contains('rating-group')) {
-        break;
-      }
-      nextGroup = nextGroup.nextElementSibling;
-    }
-    
-    // If we found a next group, scroll to it
-    if (nextGroup) {
+    input.addEventListener('focus', function() {
       setTimeout(() => {
-        nextGroup.scrollIntoView({
-          behavior: 'smooth',
-          block: 'start'
-        });
+        this.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }, 100);
-    }
-  }
-}
+    });
+  });
+});
+
 
 // ========================================
 // NAVIGATION
