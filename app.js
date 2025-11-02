@@ -1,4 +1,3 @@
-
 app.js
 // ========================================
 // FIREBASE-INTEGRATED SURVEY APPLICATION
