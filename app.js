@@ -1,9 +1,11 @@
+
+app_BULLETPROOF.js
 // ========================================
 // FIREBASE-INTEGRATED SURVEY APPLICATION
-// FULLY FIXED VERSION
+// BULLETPROOF FINAL VERSION
 // ========================================
 
-// Firebase Configuration (Your actual credentials)
+// Firebase Configuration
 const firebaseConfig = {
   apiKey: "AIzaSyAZV24F4Bnak-7bb4jtzDvuREql-GSJjRQ",
   authDomain: "survey-responses-65ef0.firebaseapp.com",
@@ -24,75 +26,33 @@ const surveyData = {
 let currentDialogue = 0;
 
 // ========================================
-// INITIALIZE FIREBASE WHEN PAGE LOADS
+// INITIALIZE FIREBASE
 // ========================================
 
 document.addEventListener('DOMContentLoaded', function() {
-  console.log('🔍 DOMContentLoaded - Checking for Firebase...');
+  console.log('🔍 DOMContentLoaded fired');
   
   setTimeout(function() {
     if (typeof firebase !== 'undefined') {
-      console.log('✅ Firebase SDK found! Initializing...');
+      console.log('✅ Firebase SDK found!');
       try {
         firebase.initializeApp(firebaseConfig);
-        console.log('✅ Firebase initialized successfully!');
-        console.log('📍 Database URL:', firebaseConfig.databaseURL);
+        console.log('✅ Firebase initialized!');
       } catch (error) {
-        console.error('❌ Firebase already initialized or error:', error.message);
+        console.error('Firebase init error:', error.message);
       }
     } else {
-      console.error('❌ Firebase SDK not loaded! Check HTML script tags.');
+      console.error('❌ Firebase SDK NOT loaded!');
     }
   }, 500);
-
-  document.addEventListener('contextmenu', function(e) {
-    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
-      e.preventDefault();
-      return false;
-    }
-  });
-
-  window.addEventListener('orientationchange', function() {
-    setTimeout(function() {
-      document.documentElement.scrollTop = 0;
-      document.body.scrollTop = 0;
-    }, 100);
-  });
-
-  document.addEventListener('touchstart', function(e) {
-    if (e.target.classList.contains('btn')) {
-      e.target.style.opacity = '0.8';
-    }
-  }, false);
-
-  document.addEventListener('touchend', function(e) {
-    if (e.target.classList.contains('btn')) {
-      e.target.style.opacity = '1';
-    }
-  }, false);
-
-  const audioPlayers = document.querySelectorAll('.audio-player');
-  audioPlayers.forEach(player => {
-    player.addEventListener('error', function(e) {
-      console.warn('Audio error:', player.src);
-    });
-  });
-
-  const inputs = document.querySelectorAll('input, textarea, select');
-  inputs.forEach(input => {
-    input.addEventListener('focus', function() {
-      setTimeout(() => {
-        this.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }, 100);
-    });
-  });
 });
 
 // ========================================
-// SECTION NAVIGATION
+// CORE FUNCTIONS
 // ========================================
 
 function startSurvey() {
+  console.log('startSurvey() called');
   hideAllSections();
   showSection('demographicsSection');
   showProgressBar();
@@ -108,6 +68,7 @@ function hideAllSections() {
 }
 
 function showSection(sectionId) {
+  console.log('showSection:', sectionId);
   const section = document.getElementById(sectionId);
   if (section) {
     section.classList.add('active');
@@ -137,10 +98,6 @@ function updateProgress(step, label) {
   }
 }
 
-// ========================================
-// FORM VALIDATION
-// ========================================
-
 function validateForm(formId) {
   const form = document.getElementById(formId);
   if (!form) {
@@ -161,6 +118,7 @@ function validateForm(formId) {
 // ========================================
 
 function submitDemographics() {
+  console.log('submitDemographics() called');
   if (!validateForm('demographicsForm')) {
     return;
   }
@@ -173,6 +131,8 @@ function submitDemographics() {
     nativeLanguageVariety: document.getElementById('nativeLanguageVariety').value
   };
 
+  console.log('Demographics saved:', surveyData.demographics);
+  
   currentDialogue = 1;
   hideAllSections();
   showSection('dialogue1Section');
@@ -184,6 +144,7 @@ function submitDemographics() {
 // ========================================
 
 function nextDialogue(dialogueNum) {
+  console.log('nextDialogue:', dialogueNum);
   const formId = `dialogue${dialogueNum}Form`;
   
   if (!validateForm(formId)) {
@@ -201,6 +162,7 @@ function nextDialogue(dialogueNum) {
 }
 
 function previousDialogue(dialogueNum) {
+  console.log('previousDialogue:', dialogueNum);
   saveDialogueData(dialogueNum);
 
   if (dialogueNum === 1) {
@@ -265,6 +227,7 @@ function saveDialogueData(dialogueNum) {
   };
 
   surveyData.dialogues[dialogueNum - 1] = dialogue;
+  console.log('Dialogue', dialogueNum, 'saved');
 }
 
 // ========================================
@@ -272,6 +235,8 @@ function saveDialogueData(dialogueNum) {
 // ========================================
 
 async function submitSurvey() {
+  console.log('submitSurvey() called');
+  
   if (!validateForm('dialogue5Form')) {
     return;
   }
@@ -294,15 +259,7 @@ async function submitSurvey() {
     const finalData = {
       participantID: participantID,
       submissionTimestamp: timestamp.toISOString(),
-      submissionDateLocal: timestamp.toLocaleString('en-US', { 
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        timeZoneName: 'short'
-      }),
+      submissionDateLocal: timestamp.toLocaleString(),
       demographics: surveyData.demographics,
       dialogues: surveyData.dialogues,
       deviceInfo: {
@@ -313,7 +270,6 @@ async function submitSurvey() {
     };
 
     console.log('📤 Attempting to save to Firebase...');
-    console.log('Firebase available:', typeof firebase !== 'undefined');
 
     if (typeof firebase !== 'undefined' && firebase.database) {
       try {
@@ -325,17 +281,14 @@ async function submitSurvey() {
         await database.ref(dbPath).set(finalData);
         
         console.log('✅ SUCCESS: Data saved to Firebase!');
-        console.log('📍 Path: responses/' + participantID);
       } catch (firebaseError) {
         console.error('❌ Firebase write error:', firebaseError);
-        console.error('Error code:', firebaseError.code);
-        console.error('Error message:', firebaseError.message);
       }
     } else {
       console.warn('⚠️ Firebase not available');
     }
 
-    // Show confirmation - NO LOCAL DOWNLOAD
+    // Show confirmation
     updateProgress(6, 'Complete');
     hideAllSections();
     showSection('confirmationSection');
@@ -354,7 +307,6 @@ async function submitSurvey() {
     
   } catch (error) {
     console.error('❌ Submission error:', error);
-    console.error('Full error:', error.toString());
     alert('Error: ' + error.message);
   } finally {
     submitBtn.textContent = originalText;
@@ -363,26 +315,7 @@ async function submitSurvey() {
 }
 
 // ========================================
-// MOBILE OPTIMIZATION
+// LOGGING
 // ========================================
 
-document.addEventListener('touchmove', function(e) {
-  if (e.touches.length > 1) {
-    e.preventDefault();
-  }
-}, { passive: false });
-
-const styleTag = document.createElement('style');
-styleTag.textContent = `
-  input, textarea, select {
-    font-size: 16px !important;
-    touch-action: manipulation;
-  }
-`;
-document.head.appendChild(styleTag);
-
-// ========================================
-// STARTUP
-// ========================================
-
-console.log('🚀 Survey app loaded. Waiting for DOM and Firebase SDK...');
+console.log('✅ app.js loaded successfully');
