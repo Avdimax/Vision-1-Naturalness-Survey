@@ -39,38 +39,41 @@ document.addEventListener('DOMContentLoaded', function() {
 function addScrollListenersToFormInputs() {
   // Add listeners to all radio buttons and text inputs
   const inputs = document.querySelectorAll('input[type="radio"], input[type="text"], textarea, select');
+  
   inputs.forEach(input => {
-    input.addEventListener('change', function() {
-      smoothScrollToNextQuestion(this);
-    });
+    // Remove existing listeners to prevent duplicates
+    input.removeEventListener('change', handleInputChange);
+    // Add new listener
+    input.addEventListener('change', handleInputChange);
   });
 }
 
-function smoothScrollToNextQuestion(element) {
-  // Find the next question container or form section
-  let nextElement = element.closest('.question-group');
-  if (!nextElement) {
-    nextElement = element.closest('fieldset');
-  }
+function handleInputChange(event) {
+  const element = event.target;
   
-  // Get next sibling question or section
-  if (nextElement) {
-    let nextQuestion = nextElement.nextElementSibling;
+  // Find the parent form-group or rating-group
+  let currentGroup = element.closest('.form-group') || element.closest('.rating-group');
+  
+  if (currentGroup) {
+    // Find the next form-group or rating-group
+    let nextGroup = currentGroup.nextElementSibling;
     
-    // Keep looking until we find a visible question group or fieldset
-    while (nextQuestion && (nextQuestion.offsetHeight === 0 || nextQuestion.classList.contains('hidden'))) {
-      nextQuestion = nextQuestion.nextElementSibling;
+    // Skip through siblings that are not form-group or rating-group
+    while (nextGroup) {
+      if (nextGroup.classList.contains('form-group') || nextGroup.classList.contains('rating-group')) {
+        break;
+      }
+      nextGroup = nextGroup.nextElementSibling;
     }
     
-    if (nextQuestion) {
-      // Scroll to bring next question into view with a small offset
-      const elementPosition = nextQuestion.getBoundingClientRect().top + window.scrollY;
-      const scrollPosition = elementPosition - 100; // 100px offset from top
-      
-      window.scrollTo({
-        top: Math.max(0, scrollPosition),
-        behavior: 'smooth'
-      });
+    // If we found a next group, scroll to it
+    if (nextGroup) {
+      setTimeout(() => {
+        nextGroup.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start'
+        });
+      }, 100);
     }
   }
 }
