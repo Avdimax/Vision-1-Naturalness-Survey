@@ -1,7 +1,6 @@
 // ========================================
 // FIREBASE SURVEY - COMPLETE WORKING VERSION
 // ========================================
-
 const firebaseConfig = {
   apiKey: "AIzaSyAZV24F4Bnak-7bb4jtzDvuREql-GSJjRQ",
   authDomain: "survey-responses-65ef0.firebaseapp.com",
@@ -29,12 +28,56 @@ document.addEventListener('DOMContentLoaded', function() {
       console.log('Firebase already initialized');
     }
   }
+  
+  // Add smooth scroll behavior to form inputs
+  addScrollListenersToFormInputs();
 });
+
+// ========================================
+// AUTO-SCROLL FUNCTIONALITY
+// ========================================
+function addScrollListenersToFormInputs() {
+  // Add listeners to all radio buttons and text inputs
+  const inputs = document.querySelectorAll('input[type="radio"], input[type="text"], textarea, select');
+  inputs.forEach(input => {
+    input.addEventListener('change', function() {
+      smoothScrollToNextQuestion(this);
+    });
+  });
+}
+
+function smoothScrollToNextQuestion(element) {
+  // Find the next question container or form section
+  let nextElement = element.closest('.question-group');
+  if (!nextElement) {
+    nextElement = element.closest('fieldset');
+  }
+  
+  // Get next sibling question or section
+  if (nextElement) {
+    let nextQuestion = nextElement.nextElementSibling;
+    
+    // Keep looking until we find a visible question group or fieldset
+    while (nextQuestion && (nextQuestion.offsetHeight === 0 || nextQuestion.classList.contains('hidden'))) {
+      nextQuestion = nextQuestion.nextElementSibling;
+    }
+    
+    if (nextQuestion) {
+      // Scroll to bring next question into view with a small offset
+      const elementPosition = nextQuestion.getBoundingClientRect().top + window.scrollY;
+      const scrollPosition = elementPosition - 100; // 100px offset from top
+      
+      window.scrollTo({
+        top: Math.max(0, scrollPosition),
+        behavior: 'smooth'
+      });
+    }
+  }
+}
 
 // ========================================
 // NAVIGATION
 // ========================================
-
 function startSurvey() {
   hideAllSections();
   showSection('demographicsSection');
@@ -51,13 +94,17 @@ function showSection(id) {
   if (section) {
     section.classList.add('active');
     window.scrollTo({ top: 0, behavior: 'smooth' });
+    
+    // Re-attach scroll listeners to newly visible inputs
+    setTimeout(() => {
+      addScrollListenersToFormInputs();
+    }, 100);
   }
 }
 
 // ========================================
 // DEMOGRAPHICS
 // ========================================
-
 function submitDemographics() {
   const form = document.getElementById('demographicsForm');
   if (!form.checkValidity()) {
@@ -74,7 +121,6 @@ function submitDemographics() {
   };
 
   console.log('Demographics saved:', surveyData.demographics);
-
   currentDialogue = 1;
   hideAllSections();
   showSection('dialogue1Section');
@@ -83,7 +129,6 @@ function submitDemographics() {
 // ========================================
 // DIALOGUE NAVIGATION
 // ========================================
-
 function nextDialogue(num) {
   const formId = `dialogue${num}Form`;
   const form = document.getElementById(formId);
@@ -93,7 +138,6 @@ function nextDialogue(num) {
   }
 
   saveDialogueData(num);
-
   if (num < 5) {
     currentDialogue = num + 1;
     hideAllSections();
@@ -116,14 +160,12 @@ function previousDialogue(num) {
 // ========================================
 // SAVE DIALOGUE DATA
 // ========================================
-
 function saveDialogueData(num) {
   const formId = `dialogue${num}Form`;
   const form = document.getElementById(formId);
   if (!form) return;
 
   const fd = new FormData(form);
-
   surveyData.dialogues[num - 1] = {
     dialogueNumber: num,
     sectionA: {
@@ -155,7 +197,6 @@ function saveDialogueData(num) {
 // ========================================
 // SUBMIT TO FIREBASE
 // ========================================
-
 async function submitSurvey() {
   const form = document.getElementById('dialogue5Form');
   if (!form.checkValidity()) {
@@ -210,22 +251,16 @@ async function submitSurvey() {
     const confirmationDetails = document.getElementById('confirmationDetails');
     if (confirmationDetails) {
       confirmationDetails.innerHTML = `
-        <div style="margin: 16px 0; padding: 16px; background-color: #f0f0f0; border-radius: 8px;">
-          <p><strong style="color: green;">✅ Submission Complete!</strong></p>
-          <p><strong>Participant ID:</strong><br/><code style="background: #fff; padding: 8px; display: inline-block; border-radius: 4px; font-family: monospace;">${participantID}</code></p>
-          <p><strong>Submitted:</strong><br/>${timestamp.toLocaleString()}</p>
-          <p><strong>Status:</strong><br/>✅ Saved to database</p>
-        </div>
+        <h2>✅ Submission Complete!</h2>
+        <p><strong>Participant ID:</strong><br><code>${participantID}</code></p>
+        <p><strong>Submitted:</strong><br>${timestamp.toLocaleString()}</p>
+        <p><strong>Status:</strong><br>✅ Saved to database</p>
       `;
     }
-
   } catch (error) {
-    console.error('❌ Submission error:', error);
-    alert('Error: ' + error.message);
-  } finally {
+    console.error('Submission error:', error);
     btn.textContent = originalText;
     btn.disabled = false;
+    alert('Error submitting survey. Please try again.');
   }
 }
-
-console.log('✅ app.js loaded successfully');
