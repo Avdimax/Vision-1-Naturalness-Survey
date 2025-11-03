@@ -152,7 +152,6 @@ function saveDialogueData(num) {
       q1_grammar: parseInt(fd.get(`d${num}_q1_grammar`)) || null,
       q3_pacing: parseInt(fd.get(`d${num}_q3_pacing`)) || null,
       q5_pragmatics: parseInt(fd.get(`d${num}_q5_pragmatics`)) || null,
-      q6_tone: parseInt(fd.get(`d${num}_q6_tone`)) || null,
       q7_prosodic: parseInt(fd.get(`d${num}_q7_prosodic`)) || null,
       q8_cultural: parseInt(fd.get(`d${num}_q8_cultural`)) || null,
       q9_dynamics: parseInt(fd.get(`d${num}_q9_dynamics`)) || null
