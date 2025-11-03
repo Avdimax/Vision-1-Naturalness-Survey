@@ -1,4 +1,3 @@
-
 // ========================================
 // FIREBASE SURVEY - COMPLETE WORKING VERSION
 // ========================================
@@ -151,9 +150,7 @@ function saveDialogueData(num) {
     },
     sectionB: {
       q1_grammar: parseInt(fd.get(`d${num}_q1_grammar`)) || null,
-      q2_vocabulary: parseInt(fd.get(`d${num}_q2_vocabulary`)) || null,
       q3_pacing: parseInt(fd.get(`d${num}_q3_pacing`)) || null,
-      q4_cohesion: parseInt(fd.get(`d${num}_q4_cohesion`)) || null,
       q5_pragmatics: parseInt(fd.get(`d${num}_q5_pragmatics`)) || null,
       q6_tone: parseInt(fd.get(`d${num}_q6_tone`)) || null,
       q7_prosodic: parseInt(fd.get(`d${num}_q7_prosodic`)) || null,
@@ -161,9 +158,6 @@ function saveDialogueData(num) {
       q9_dynamics: parseInt(fd.get(`d${num}_q9_dynamics`)) || null
     },
     sectionC: {
-      q1_mostNatural: fd.get(`d${num}_q1_mostNatural`) || '',
-      q2_leastNatural: fd.get(`d${num}_q2_leastNatural`) || '',
-      q3_ifRealLife: fd.get(`d${num}_q3_ifRealLife`) || '',
       q4_suggestions: fd.get(`d${num}_q4_suggestions`) || ''
     }
   };
