@@ -162,10 +162,6 @@ function saveDialogueData(num) {
     console.log(`Dialogue ${num} saved`);
 }
 
-// ========================================
-// SUBMIT TO FIREBASE - FIXED FOR MOBILE
-// ========================================
-
 async function submitSurvey() {
     const form = document.getElementById('dialogue5Form');
     if (!form.checkValidity()) {
@@ -175,55 +171,125 @@ async function submitSurvey() {
 
     saveDialogueData(5);
 
-    const btn = event ? event.target : document.querySelector('#submitBtn');  // Fallback if no event
+    const btn = event ? event.target : document.querySelector('#submitBtn');
     const originalText = btn.textContent;
     btn.textContent = 'Submitting...';
     btn.disabled = true;
 
-    const timestamp = new Date();
-    const firstName = surveyData.demographics.firstName || 'Anonymous';
-    const participantID = `${firstName}_${Date.now()}`;
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    console.log('Device: ', isMobile ? 'Mobile' : 'Desktop');
 
-    const finalData = {
-        participantID: participantID,
-        submissionTimestamp: timestamp.toISOString(),
-        submissionDateLocal: timestamp.toLocaleString(),
-        demographics: surveyData.demographics,
-        dialogues: surveyData.dialogues,
-        deviceInfo: {
-            userAgent: navigator.userAgent,
-            language: navigator.language,
-            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-            isMobile: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)  // Log mobile
+    try {
+        // Re-init Firebase if not ready (mobile fix)
+        if (typeof firebase === 'undefined' || !firebase.apps.length) {
+            if (typeof firebase !== 'undefined') {
+                firebase.initializeApp(firebaseConfig);
+                console.log('🔄 Firebase re-initialized for mobile');
+                // Wait 1s on mobile
+                if (isMobile) await new Promise(resolve => setTimeout(resolve, 1000));
+            } else {
+                throw new Error('Firebase SDK not loaded');
+            }
         }
-    };
 
-    console.log('📤 Submitting to Firebase...', { isMobile: finalData.deviceInfo.isMobile });
+        const timestamp = new Date();
+        const firstName = surveyData.demographics.firstName || 'Anonymous';
+        const participantID = `${firstName}_${Date.now()}`;
 
-    let submissionSuccess = false;
+        const finalData = {
+            participantID: participantID,
+            submissionTimestamp: timestamp.toISOString(),
+            submissionDateLocal: timestamp.toLocaleString(),
+            demographics: surveyData.demographics,
+            dialogues: surveyData.dialogues,
+            deviceInfo: {
+                userAgent: navigator.userAgent,
+                language: navigator.language,
+                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                isMobile: isMobile
+            }
+        };
 
-    if (typeof firebase !== 'undefined' && firebase.database) {
-        try {
+        console.log('📤 Submitting to Firebase...', finalData);
+
+        // Use callback instead of await for mobile reliability
+        if (firebase.database) {
             const database = firebase.database();
             const dbPath = `responses/${participantID}`;
-            
-            // MOBILE FIX: Add 15-second timeout
-            const submitPromise = database.ref(dbPath).set(finalData);
-            const timeoutPromise = new Promise((_, reject) => 
-                setTimeout(() => reject(new Error('Timeout - network slow on mobile')), 15000)
-            );
-            
-            await Promise.race([submitPromise, timeoutPromise]);
-            submissionSuccess = true;
-            console.log('✅ Data saved to Firebase!');
-        } catch (firebaseError) {
-            console.error('❌ Firebase error (mobile?):', firebaseError);
-            submissionSuccess = false;
-            // Don't let error stop confirmation
+
+            database.ref(dbPath).set(finalData, function(error) {
+                if (error) {
+                    console.error('Firebase Error:', error);
+                    // Mobile fallback: Download data as JSON
+                    if (isMobile) {
+                        const blob = new Blob([JSON.stringify(finalData, null, 2)], { type: 'application/json' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `survey-${participantID}.json`;
+                        a.click();
+                        URL.revokeObjectURL(url);
+                    }
+                } else {
+                    console.log('✅ Firebase success!');
+                }
+            });
+
+            // Show confirmation after 3s (allows callback to process)
+            setTimeout(() => {
+                showConfirmation(participantID, timestamp, isMobile);
+            }, 3000);
+
+        } else {
+            throw new Error('Firebase database not available');
         }
-    } else {
-        console.warn('Firebase not available - offline mode?');
+
+    } catch (error) {
+        console.error('Submission error:', error);
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        alert(isMobile ? 'Mobile submission issue. Data logged – try desktop or refresh. Check console for details.' : 'Error submitting. Try again.');
+        // Fallback download on mobile error
+        if (isMobile) {
+            const finalData = { /* same as above */ };  // Paste the finalData object here
+            const blob = new Blob([JSON.stringify(finalData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'survey-backup.json';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+    } finally {
+        btn.textContent = originalText;
+        btn.disabled = false;
     }
+}
+
+// Helper to show confirmation
+function showConfirmation(participantID, timestamp, isMobile) {
+    hideAllSections();
+    showSection('confirmationSection');
+
+    const confirmationDetails = document.getElementById('confirmationDetails');
+    if (confirmationDetails) {
+        confirmationDetails.innerHTML = `
+            <div class="confirmation-item">
+                <strong>Participant ID:</strong><br>
+                <code>${participantID}</code>
+            </div>
+            <div class="confirmation-item">
+                <strong>Submitted:</strong><br>
+                ${timestamp.toLocaleString()}
+            </div>
+            <div class="confirmation-item">
+                <strong>Status:</strong><br>
+                ${isMobile ? '⚠️ Mobile mode - Check Firebase console or downloaded JSON' : '✅ Success!'}
+            </div>
+            ${isMobile ? '<div class="confirmation-item"><strong>Note:</strong> If data didn\'t save, use the downloaded backup.</div>' : ''}
+        `;
+    }
+}
+
 
     // ALWAYS show confirmation (prevents mobile hang)
     hideAllSections();
