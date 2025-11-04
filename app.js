@@ -2,7 +2,7 @@
 // FIREBASE SURVEY - COMPLETE WORKING VERSION
 // ========================================
 const firebaseConfig = {
-  apiKey: "AIzaSyAZV24F4Bnak-7bb4jtzDvuREql-GSJjRQ",
+  apiKey: "AQ.Ab8RN6JS_d2QoeCzv6s9R4pNaDGGL3QZCZawHbhpOTcMkFW_Cg",
   authDomain: "survey-responses-65ef0.firebaseapp.com",
   databaseURL: "https://survey-responses-65ef0-default-rtdb.firebaseio.com",
   projectId: "survey-responses-65ef0",
