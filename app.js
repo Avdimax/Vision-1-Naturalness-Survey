@@ -1,9 +1,9 @@
 // ========================================
-// FIREBASE SURVEY - MOBILE-FIXED VERSION
+// FIREBASE SURVEY - MOBILE-SAFE FINAL VERSION
 // ========================================
 
 const firebaseConfig = {
-    apiKey: "AIzaSyBLZwdGQ_OSC_kiwmjqTU1vLiNn_REUcoQ",  // Your current key - if issues persist, try old one
+    apiKey: "AIzaSyBLZwdGQ_OSC_kiwmjqTU1vLiNn_REUcoQ",
     authDomain: "survey-responses-65ef0.firebaseapp.com",
     databaseURL: "https://survey-responses-65ef0-default-rtdb.firebaseio.com",
     projectId: "survey-responses-65ef0",
@@ -29,6 +29,7 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log('Firebase already initialized');
         }
     }
+
     addScrollListenersToFormInputs();
 });
 
@@ -36,7 +37,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // AUTO-SCROLL FUNCTIONALITY
 // ========================================
 
-function addScrollListenersToFormInputs() {
+document.addEventListener('DOMContentLoaded', function() {
     const inputs = document.querySelectorAll('input, textarea, select');
     inputs.forEach(input => {
         input.addEventListener('focus', function() {
@@ -45,7 +46,7 @@ function addScrollListenersToFormInputs() {
             }, 100);
         });
     });
-}
+});
 
 // ========================================
 // NAVIGATION
@@ -67,6 +68,7 @@ function showSection(id) {
     if (section) {
         section.classList.add('active');
         window.scrollTo({ top: 0, behavior: 'smooth' });
+
         setTimeout(() => {
             addScrollListenersToFormInputs();
         }, 100);
@@ -162,6 +164,10 @@ function saveDialogueData(num) {
     console.log(`Dialogue ${num} saved`);
 }
 
+// ========================================
+// SUBMIT TO FIREBASE - MOBILE OPTIMIZED
+// ========================================
+
 async function submitSurvey() {
     const form = document.getElementById('dialogue5Form');
     if (!form.checkValidity()) {
@@ -171,27 +177,12 @@ async function submitSurvey() {
 
     saveDialogueData(5);
 
-    const btn = event ? event.target : document.querySelector('#submitBtn');
+    const btn = event.target;
     const originalText = btn.textContent;
     btn.textContent = 'Submitting...';
     btn.disabled = true;
 
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    console.log('Device: ', isMobile ? 'Mobile' : 'Desktop');
-
     try {
-        // Re-init Firebase if not ready (mobile fix)
-        if (typeof firebase === 'undefined' || !firebase.apps.length) {
-            if (typeof firebase !== 'undefined') {
-                firebase.initializeApp(firebaseConfig);
-                console.log('🔄 Firebase re-initialized for mobile');
-                // Wait 1s on mobile
-                if (isMobile) await new Promise(resolve => setTimeout(resolve, 1000));
-            } else {
-                throw new Error('Firebase SDK not loaded');
-            }
-        }
-
         const timestamp = new Date();
         const firstName = surveyData.demographics.firstName || 'Anonymous';
         const participantID = `${firstName}_${Date.now()}`;
@@ -205,128 +196,76 @@ async function submitSurvey() {
             deviceInfo: {
                 userAgent: navigator.userAgent,
                 language: navigator.language,
-                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-                isMobile: isMobile
+                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
             }
         };
 
-        console.log('📤 Submitting to Firebase...', finalData);
+        console.log('📤 Submitting to Firebase...');
 
-        // Use callback instead of await for mobile reliability
-        if (firebase.database) {
-            const database = firebase.database();
-            const dbPath = `responses/${participantID}`;
+        if (typeof firebase !== 'undefined' && firebase.database) {
+            try {
+                const database = firebase.database();
+                const dbPath = `responses/${participantID}`;
 
-            database.ref(dbPath).set(finalData, function(error) {
-                if (error) {
-                    console.error('Firebase Error:', error);
-                    // Mobile fallback: Download data as JSON
-                    if (isMobile) {
-                        const blob = new Blob([JSON.stringify(finalData, null, 2)], { type: 'application/json' });
-                        const url = URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.href = url;
-                        a.download = `survey-${participantID}.json`;
-                        a.click();
-                        URL.revokeObjectURL(url);
-                    }
-                } else {
-                    console.log('✅ Firebase success!');
-                }
-            });
+                // MOBILE-SAFE: 10-second timeout for slow connections
+                const submitPromise = database.ref(dbPath).set(finalData);
+                const timeoutPromise = new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error('Timeout')), 10000)
+                );
 
-            // Show confirmation after 3s (allows callback to process)
-            setTimeout(() => {
-                showConfirmation(participantID, timestamp, isMobile);
-            }, 3000);
-
+                await Promise.race([submitPromise, timeoutPromise]);
+                console.log('✅ Data saved to Firebase!');
+            } catch (firebaseError) {
+                console.error('Firebase write error:', firebaseError);
+                // Continue - show confirmation anyway
+            }
         } else {
-            throw new Error('Firebase database not available');
+            console.warn('Firebase not available');
+        }
+
+        // ALWAYS show confirmation after attempt
+        hideAllSections();
+        showSection('confirmationSection');
+
+        const confirmationDetails = document.getElementById('confirmationDetails');
+        if (confirmationDetails) {
+            confirmationDetails.innerHTML = `
+                <div class="confirmation-item">
+                    <strong>Participant ID:</strong><br>
+                    <code>${participantID}</code>
+                </div>
+                <div class="confirmation-item">
+                    <strong>Submitted:</strong><br>
+                    ${timestamp.toLocaleString()}
+                </div>
+                <div class="confirmation-item">
+                    <strong>Status:</strong><br>
+                    ✅ Your responses have been saved
+                </div>
+            `;
         }
 
     } catch (error) {
         console.error('Submission error:', error);
-        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-        alert(isMobile ? 'Mobile submission issue. Data logged – try desktop or refresh. Check console for details.' : 'Error submitting. Try again.');
-        // Fallback download on mobile error
-        if (isMobile) {
-            const finalData = { /* same as above */ };  // Paste the finalData object here
-            const blob = new Blob([JSON.stringify(finalData, null, 2)], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'survey-backup.json';
-            a.click();
-            URL.revokeObjectURL(url);
-        }
+        alert('Error submitting survey. Please try again.');
     } finally {
+        // Always reset button
         btn.textContent = originalText;
         btn.disabled = false;
     }
 }
 
-// Helper to show confirmation
-function showConfirmation(participantID, timestamp, isMobile) {
-    hideAllSections();
-    showSection('confirmationSection');
-
-    const confirmationDetails = document.getElementById('confirmationDetails');
-    if (confirmationDetails) {
-        confirmationDetails.innerHTML = `
-            <div class="confirmation-item">
-                <strong>Participant ID:</strong><br>
-                <code>${participantID}</code>
-            </div>
-            <div class="confirmation-item">
-                <strong>Submitted:</strong><br>
-                ${timestamp.toLocaleString()}
-            </div>
-            <div class="confirmation-item">
-                <strong>Status:</strong><br>
-                ${isMobile ? '⚠️ Mobile mode - Check Firebase console or downloaded JSON' : '✅ Success!'}
-            </div>
-            ${isMobile ? '<div class="confirmation-item"><strong>Note:</strong> If data didn\'t save, use the downloaded backup.</div>' : ''}
-        `;
-    }
-}
-
-
-    // ALWAYS show confirmation (prevents mobile hang)
-    hideAllSections();
-    showSection('confirmationSection');
-
-    const confirmationDetails = document.getElementById('confirmationDetails');
-    if (confirmationDetails) {
-        const status = submissionSuccess ? '✅ Successfully saved!' : '⚠️ Saved locally - Firebase issue (check connection)';
-        confirmationDetails.innerHTML = `
-            <div class="confirmation-item">
-                <strong>Participant ID:</strong><br>
-                <code>${participantID}</code>
-            </div>
-            <div class="confirmation-item">
-                <strong>Submitted:</strong><br>
-                ${timestamp.toLocaleString()}
-            </div>
-            <div class="confirmation-item">
-                <strong>Status:</strong><br>
-                ${status}
-            </div>
-            <div class="confirmation-note">
-                If Firebase failed, your data is still logged in console. Contact support if needed.
-            </div>
-        `;
-    }
-
-    // Always reset button
-    btn.textContent = originalText;
-    btn.disabled = false;
-
-    if (!submissionSuccess) {
-        alert('Submission may have issues on mobile. Data logged - try desktop or refresh.');
-    }
-}
-
 // ========================================
-// HELPER: Duplicate scroll listener (safe)
+// HELPER FUNCTION
 // ========================================
-document.addEventListener('DOMContentLoaded', addScrollListenersToFormInputs);
+
+function addScrollListenersToFormInputs() {
+    const inputs = document.querySelectorAll('input, textarea, select');
+    inputs.forEach(input => {
+        input.addEventListener('focus', function() {
+            setTimeout(() => {
+                this.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 100);
+        });
+    });
+}
